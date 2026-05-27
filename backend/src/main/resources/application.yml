@@ -41,9 +41,9 @@ spring:
 
   data:
     redis:
-      host: redis
-      port: 6379
-      password: paymentpass
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+      password: ${REDIS_PASSWORD}
       timeout: 2000ms
       lettuce:
         pool:
