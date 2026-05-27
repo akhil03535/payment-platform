@@ -1,0 +1,215 @@
+{
+  "__inputs": [],
+  "__requires": [
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "datasource", "id": "prometheus", "name": "Prometheus", "version": "1.0.0" },
+    { "type": "panel", "id": "stat",        "name": "Stat",         "version": "" },
+    { "type": "panel", "id": "timeseries",  "name": "Time series",  "version": "" },
+    { "type": "panel", "id": "gauge",       "name": "Gauge",        "version": "" }
+  ],
+  "description":  "PayFlow Payment Processing Platform Metrics",
+  "editable":     true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id":           null,
+  "links":        [],
+  "panels": [
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red",   "value": 80   }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "colorMode": "background", "graphMode": "area", "orientation": "auto",
+                   "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+                   "textMode": "auto" },
+      "pluginVersion": "10.3.0",
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr":  "payments_created_total",
+          "legendFormat": "Total Created",
+          "refId": "A"
+        }
+      ],
+      "title": "Total Payments Created",
+      "type":  "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red",    "value": null },
+              { "color": "yellow", "value": 80   },
+              { "color": "green",  "value": 95   }
+            ]
+          },
+          "unit": "percent", "min": 0, "max": 100
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 0 },
+      "id": 2,
+      "options": { "colorMode": "background", "graphMode": "area", "orientation": "auto",
+                   "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+                   "textMode": "auto" },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rate(payments_success_total[5m]) / (rate(payments_created_total[5m]) + 0.001) * 100",
+          "legendFormat": "Success Rate %",
+          "refId": "A"
+        }
+      ],
+      "title": "Payment Success Rate",
+      "type":  "stat"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisCenteredZero": false, "axisColorMode": "text",
+            "axisLabel": "", "axisPlacement": "auto",
+            "barAlignment": 0, "drawStyle": "line",
+            "fillOpacity": 15, "gradientMode": "none",
+            "lineInterpolation": "smooth", "lineWidth": 2,
+            "pointSize": 5, "showPoints": "never", "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 3,
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom" },
+                   "tooltip": { "mode": "multi", "sort": "none" } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rate(payments_created_total[1m])",
+          "legendFormat": "Created / sec", "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rate(payments_success_total[1m])",
+          "legendFormat": "Success / sec", "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rate(payments_failed_total[1m])",
+          "legendFormat": "Failed / sec", "refId": "C"
+        }
+      ],
+      "title": "Payment Throughput",
+      "type":  "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line", "fillOpacity": 10,
+            "lineInterpolation": "smooth", "lineWidth": 2,
+            "showPoints": "never", "spanNulls": false
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 4,
+      "options": { "legend": { "calcs": ["mean","max"], "displayMode": "table", "placement": "bottom" },
+                   "tooltip": { "mode": "multi", "sort": "none" } },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "histogram_quantile(0.50, rate(payment_creation_time_seconds_bucket[5m]))",
+          "legendFormat": "p50", "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "histogram_quantile(0.95, rate(payment_creation_time_seconds_bucket[5m]))",
+          "legendFormat": "p95", "refId": "B"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "histogram_quantile(0.99, rate(payment_creation_time_seconds_bucket[5m]))",
+          "legendFormat": "p99", "refId": "C"
+        }
+      ],
+      "title": "Payment Processing Latency",
+      "type":  "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "id": 5,
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "jvm_memory_used_bytes{area='heap'}",
+          "legendFormat": "Heap Used", "refId": "A"
+        },
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "jvm_memory_max_bytes{area='heap'}",
+          "legendFormat": "Heap Max", "refId": "B"
+        }
+      ],
+      "title": "JVM Heap Memory",
+      "type":  "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "drawStyle": "line", "fillOpacity": 10, "lineWidth": 2, "showPoints": "never" }
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "id": 6,
+      "targets": [
+        {
+          "datasource": { "type": "prometheus" },
+          "expr": "rate(http_server_requests_seconds_count[1m])",
+          "legendFormat": "{{method}} {{uri}} {{status}}", "refId": "A"
+        }
+      ],
+      "title": "HTTP Request Rate",
+      "type":  "timeseries"
+    }
+  ],
+  "refresh":        "10s",
+  "schemaVersion":  39,
+  "tags":           ["payflow", "payments", "java"],
+  "templating":     { "list": [] },
+  "time":           { "from": "now-1h", "to": "now" },
+  "timepicker":     {},
+  "timezone":       "browser",
+  "title":          "PayFlow — Payment Platform",
+  "uid":            "payflow-main",
+  "version":        1
+}

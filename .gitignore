@@ -1,0 +1,41 @@
+# Java / Maven
+target/
+*.jar
+*.war
+*.class
+.mvn/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.eclipse
+.settings/
+.classpath
+.project
+*.swp
+
+# Node / npm
+node_modules/
+dist/
+.vite/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+
+# Docker
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+*.exec
+jacoco/

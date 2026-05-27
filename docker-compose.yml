@@ -1,0 +1,246 @@
+
+
+# ══════════════════════════════════════════════════════
+#  PayFlow — Production Docker Compose Stack
+#  Run: docker-compose up --build           
+# ══════════════════════════════════════════════════════
+
+x-logging: &default-logging
+  driver: "json-file"
+  options:
+    max-size: "20m"
+    max-file: "5"
+
+networks:
+  payflow-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  kafka-data:
+  zookeeper-data:
+  prometheus-data:
+  grafana-data:
+
+services:
+
+  # ── PostgreSQL ───────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: payflow-postgres
+    restart: unless-stopped
+    networks: [payflow-net]
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB:       paymentdb
+      POSTGRES_USER:     paymentuser
+      POSTGRES_PASSWORD: paymentpass
+      PGDATA:            /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paymentuser -d paymentdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    logging: *default-logging
+
+  # ── Redis ────────────────────────────────────────────
+  # ── Redis ────────────────────────────────────────────
+    # ── Redis ────────────────────────────────────────────
+  redis:
+    image: redis:7.2
+    container_name: payflow-redis
+    restart: unless-stopped
+
+    networks:
+      - payflow-net
+
+    ports:
+      - "6379:6379"
+
+    command: >
+      redis-server
+      --requirepass paymentpass
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save 60 1
+      --loglevel warning
+
+    environment:
+      REDIS_PASSWORD: paymentpass
+
+    volumes:
+      - redis-data:/data
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "paymentpass", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    logging: *default-logging
+  # ── Zookeeper ────────────────────────────────────────
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: payflow-zookeeper
+    restart: unless-stopped
+    networks: [payflow-net]
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME:   2000
+      ZOOKEEPER_LOG4J_ROOT_LOGLEVEL: WARN
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo ruok | nc localhost 2181"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    logging: *default-logging
+
+  # ── Kafka ────────────────────────────────────────────
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: payflow-kafka
+    restart: unless-stopped
+    networks: [payflow-net]
+    ports:
+      - "9092:9092"
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    logging: *default-logging
+
+  # ── Backend ──────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: payflow-backend
+    restart: unless-stopped
+    networks: [payflow-net]
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    environment:
+      # Database
+      DB_HOST:     postgres
+      DB_PORT:     5432
+      DB_NAME:     paymentdb
+      DB_USER:     paymentuser
+      DB_PASS:     paymentpass
+      # Redis
+      REDIS_HOST:  redis
+      REDIS_PORT:  6379
+      # Kafka
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      # JWT
+      JWT_SECRET:  PayFlowSuperSecretKeyForProductionUseChangeThisIn512BitsOrMoreForHS512Algo
+      # CORS
+      CORS_ORIGINS: http://localhost:3000,http://localhost:5173,http://frontend:80
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
+    logging: *default-logging
+
+  # ── Frontend ─────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: payflow-frontend
+    restart: unless-stopped
+    networks: [payflow-net]
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging: *default-logging
+
+  # ── Prometheus ───────────────────────────────────────
+  prometheus:
+    build:
+      context: ./infrastructure/prometheus
+      dockerfile: Dockerfile
+    container_name: payflow-prometheus
+    restart: unless-stopped
+    networks: [payflow-net]
+    ports:
+      - "9090:9090"
+    volumes:
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    logging: *default-logging
+
+  # ── Grafana ──────────────────────────────────────────
+  grafana:
+    image: grafana/grafana:10.3.1
+    container_name: payflow-grafana
+    restart: unless-stopped
+    networks: [payflow-net]
+    ports:
+      - "3001:3000"
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    environment:
+      GF_SECURITY_ADMIN_USER:     admin
+      GF_SECURITY_ADMIN_PASSWORD: payflow123
+      GF_USERS_ALLOW_SIGN_UP:     "false"
+      GF_SERVER_ROOT_URL:         http://localhost:3001
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/payment-platform.json
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infrastructure/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging: *default-logging

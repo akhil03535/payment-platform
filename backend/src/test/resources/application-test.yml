@@ -1,0 +1,85 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: false
+  flyway:
+    enabled: false
+  autoconfigure:
+    exclude:
+      - org.redisson.spring.starter.RedissonAutoConfigurationV2
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+  redis:
+    enabled: false
+  cache:
+    type: none
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: test-group
+      auto-offset-reset: earliest
+    listener:
+      auto-startup: false
+
+feature:
+  kafka:
+    enabled: false
+  cache:
+    enabled: false
+
+app:
+  jwt:
+    secret: TestSecretKeyForUnitTestsThatIsLongEnoughForHS512AlgorithmToWork1234567890
+    access-token-expiry: 900000
+    refresh-token-expiry: 604800000
+  cors:
+    allowed-origins: http://localhost:3000
+  payment:
+    max-retry-attempts: 3
+    retry-delay-ms: 100
+    idempotency-ttl-seconds: 86400
+    rate-limit-requests: 1000
+    rate-limit-window-seconds: 60
+
+kafka:
+  topics:
+    payment-created:   payment.created.test
+    payment-processed: payment.processed.test
+    payment-failed:    payment.failed.test
+    payment-retry:     payment.retry.test
+    payment-reversed:  payment.reversed.test
+    notification:      payment.notification.test
+    dlq:               payment.dlq.test
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      paymentProcessor:
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 5s
+  retry:
+    instances:
+      paymentProcessor:
+        maxAttempts: 2
+        waitDuration: 100ms
+  timelimiter:
+    instances:
+      paymentProcessor:
+        timeoutDuration: 5s
+
+logging:
+  level:
+    com.paymentplatform: WARN
+    org.springframework: WARN
