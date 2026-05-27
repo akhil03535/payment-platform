@@ -1,0 +1,73 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:paymentdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: false
+  flyway:
+    enabled: false
+  autoconfigure:
+    exclude:
+      - org.redisson.spring.starter.RedissonAutoConfigurationV2
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+  redis:
+    enabled: false
+  cache:
+    type: none
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: local-group
+      auto-offset-reset: earliest
+    listener:
+      auto-startup: false
+
+server:
+  port: 8080
+
+redisson:
+  enabled: false
+
+app:
+  jwt:
+    secret: LocalTestSecretKeyForJWTGenerationThatIsAtLeastSixtyFourCharactersLong1234567890ABCD
+    access-token-expiry: 900000
+    refresh-token-expiry: 604800000
+  cors:
+    allowed-origins: http://localhost:5173,http://127.0.0.1:5173
+  payment:
+    max-retry-attempts: 3
+    retry-delay-ms: 100
+    idempotency-ttl-seconds: 86400
+    rate-limit-requests: 1000
+    rate-limit-window-seconds: 60
+
+feature:
+  kafka:
+    enabled: false
+  cache:
+    enabled: false
+
+kafka:
+  topics:
+    payment-created: payment.created.local
+    payment-processed: payment.processed.local
+    payment-failed: payment.failed.local
+    payment-retry: payment.retry.local
+    payment-reversed: payment.reversed.local
+    notification: payment.notification.local
+    dlq: payment.dlq.local
+
+logging:
+  level:
+    com.paymentplatform: WARN
+    org.springframework: WARN
