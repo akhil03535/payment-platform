@@ -3,30 +3,30 @@ import type { ApiResponse, AuthResponse, LoginRequest, RegisterRequest, User } f
 
 export const authService = {
   async login(data: LoginRequest): Promise<AuthResponse> {
-    const res = await apiClient.post<ApiResponse<AuthResponse>>('/auth/login', data)
+    const res = await apiClient.post<ApiResponse<AuthResponse>>('/api/auth/login', data)
     return res.data.data
   },
 
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    const res = await apiClient.post<ApiResponse<AuthResponse>>('/auth/register', data)
+    const res = await apiClient.post<ApiResponse<AuthResponse>>('/api/auth/register', data)
     return res.data.data
   },
 
   async getCurrentUser(): Promise<User> {
-    const res = await apiClient.get<ApiResponse<User>>('/auth/me')
+    const res = await apiClient.get<ApiResponse<User>>('/api/auth/me')
     return res.data.data
   },
 
   async logout(): Promise<void> {
     try {
-      await apiClient.post('/auth/logout')
+      await apiClient.post('/api/auth/logout')
     } finally {
       localStorage.clear()
     }
   },
 
   async refreshToken(token: string): Promise<AuthResponse> {
-    const res = await apiClient.post<ApiResponse<AuthResponse>>('/auth/refresh', null, {
+    const res = await apiClient.post<ApiResponse<AuthResponse>>('/api/auth/refresh', null, {
       headers: { 'Refresh-Token': token },
     })
     return res.data.data

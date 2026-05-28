@@ -10,7 +10,7 @@ const apiOrigin = /^https?:\/\//i.test(normalizedApiOrigin)
   ? normalizedApiOrigin
   : DEFAULT_API_ORIGIN
 
-const BASE_URL = `${apiOrigin}/api`
+const BASE_URL = apiOrigin
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -71,7 +71,7 @@ apiClient.interceptors.response.use(
       }
 
       try {
-        const { data } = await axios.post(`${BASE_URL}/auth/refresh`, null, {
+        const { data } = await axios.post(`${BASE_URL}/api/auth/refresh`, null, {
           headers: { 'Refresh-Token': refreshToken },
         })
         const newToken = data.data.accessToken
