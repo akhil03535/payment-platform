@@ -28,6 +28,11 @@ public class TransactionController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
 
+        if (user == null) {
+            return ResponseEntity.status(401)
+                .body(ApiResponse.error("Authentication required", "UNAUTHORIZED"));
+        }
+
         PageRequest pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<TransactionResponse> transactions;
 
@@ -46,6 +51,11 @@ public class TransactionController {
     public ResponseEntity<ApiResponse<TransactionResponse>> getTransaction(
             @PathVariable UUID transactionId,
             @AuthenticationPrincipal User user) {
+
+        if (user == null) {
+            return ResponseEntity.status(401)
+                .body(ApiResponse.error("Authentication required", "UNAUTHORIZED"));
+        }
 
         Transaction transaction = transactionRepository.findById(transactionId)
                 .orElseThrow(() -> new RuntimeException("Transaction not found"));

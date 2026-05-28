@@ -43,6 +43,10 @@ public class AuthController {
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(@AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Authentication required", "UNAUTHORIZED"));
+        }
         authService.logout(user.getUsername());
         return ResponseEntity.ok(ApiResponse.success(null, "Logged out successfully"));
     }
@@ -50,6 +54,10 @@ public class AuthController {
     @GetMapping("/me")
     public ResponseEntity<ApiResponse<com.paymentplatform.dto.response.UserResponse>> getCurrentUser(
             @AuthenticationPrincipal User user) {
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Authentication required", "UNAUTHORIZED"));
+        }
         com.paymentplatform.dto.response.UserResponse userResponse =
             com.paymentplatform.dto.response.UserResponse.builder()
                 .id(user.getId())
