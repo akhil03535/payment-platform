@@ -18,8 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -48,10 +47,10 @@ class PaymentServiceTest {
     @Mock private AuditLogRepository auditLogRepository;
     @Mock private UserRepository userRepository;
     @Mock private PaymentEventProducer eventProducer;
-    @Mock private RedissonClient redissonClient;
+    //ock private RedissonClient redissonClient;
     @Mock private RedisTemplate<String, Object> redisTemplate;
     @Mock private ValueOperations<String, Object> valueOperations;
-    @Mock private RLock rLock;
+    
 
     @InjectMocks
     private PaymentService paymentService;
