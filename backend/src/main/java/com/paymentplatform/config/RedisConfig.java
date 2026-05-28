@@ -2,7 +2,7 @@ package com.paymentplatform.config;
 
 import java.time.Duration;
 
-import org.redisson.config.Config;
+// import org.redisson.config.Config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -80,15 +80,15 @@ public class RedisConfig {
             .build();
     }
 
-    @Bean
-    public org.redisson.config.Config redissonConfig() {
-        Config config = new Config();
-        config.useSingleServer()
-            .setAddress("rediss://" + redisHost + ":" + redisPort)
-            .setConnectionMinimumIdleSize(2)
-            .setConnectionPoolSize(10)
-            .setConnectTimeout(3000)
-            .setTimeout(3000);
-        return config;
-    }
+    // @Bean
+    // public org.redisson.config.Config redissonConfig() {
+    //     Config config = new Config();
+    //     config.useSingleServer()
+    //         .setAddress("rediss://" + redisHost + ":" + redisPort)
+    //         .setConnectionMinimumIdleSize(2)
+    //         .setConnectionPoolSize(10)
+    //         .setConnectTimeout(3000)
+    //         .setTimeout(3000);
+    //     return config;
+    // }
 }
