@@ -112,6 +112,8 @@ public class PaymentService {
 
         // Publish event
         PaymentEvent event = buildEvent(payment, PaymentEvent.EventTypes.PAYMENT_CREATED, correlationId);
+        log.info("Payment event skipped because Kafka disabled: eventType={}, paymentId={}, correlationId={}",
+            event.getEventType(), event.getPaymentId(), correlationId);
         // eventProducer.publishPaymentCreated(event);
 
         // Audit log
@@ -154,6 +156,8 @@ public class PaymentService {
             paymentRepository.save(payment);
 
             PaymentEvent processingEvent = buildEvent(payment, PaymentEvent.EventTypes.PAYMENT_PROCESSING, correlationId);
+            log.info("Payment event skipped because Kafka disabled: eventType={}, paymentId={}, correlationId={}",
+                processingEvent.getEventType(), processingEvent.getPaymentId(), correlationId);
             // eventProducer.publishPaymentCreated(processingEvent);
 
             // Simulate payment gateway call
@@ -197,6 +201,8 @@ public class PaymentService {
                 payment.getUser().getId(), correlationId);
 
             PaymentEvent successEvent = buildEvent(payment, PaymentEvent.EventTypes.PAYMENT_SUCCESS, correlationId);
+            log.info("Payment event skipped because Kafka disabled: eventType={}, paymentId={}, correlationId={}",
+                successEvent.getEventType(), successEvent.getPaymentId(), correlationId);
             // eventProducer.publishPaymentProcessed(successEvent);
 
         } catch (RetryablePaymentException e) {
@@ -257,6 +263,8 @@ public class PaymentService {
 
         PaymentEvent retryEvent = buildEvent(payment, PaymentEvent.EventTypes.PAYMENT_RETRY, correlationId);
         retryEvent.setRetryCount(payment.getRetryCount());
+        log.info("Payment event skipped because Kafka disabled: eventType={}, paymentId={}, correlationId={}",
+            retryEvent.getEventType(), retryEvent.getPaymentId(), correlationId);
         // eventProducer.publishPaymentRetry(retryEvent);
 
         processPaymentAsync(payment.getId(), correlationId);
@@ -307,6 +315,8 @@ public class PaymentService {
             user.getId(), correlationId);
 
         PaymentEvent reversalEvent = buildEvent(payment, PaymentEvent.EventTypes.PAYMENT_REVERSED, correlationId);
+        log.info("Payment event skipped because Kafka disabled: eventType={}, paymentId={}, correlationId={}",
+            reversalEvent.getEventType(), reversalEvent.getPaymentId(), correlationId);
         // eventProducer.publishPaymentReversed(reversalEvent);
 
         return mapToResponse(payment);
@@ -495,6 +505,8 @@ public class PaymentService {
 
             PaymentEvent failEvent = buildEvent(payment, PaymentEvent.EventTypes.PAYMENT_FAILED, correlationId);
             failEvent.setFailureReason(reason);
+            log.info("Payment event skipped because Kafka disabled: eventType={}, paymentId={}, correlationId={}",
+                failEvent.getEventType(), failEvent.getPaymentId(), correlationId);
             // eventProducer.publishPaymentFailed(failEvent);
 
             log.error("Payment failed: ref={}, reason={}, errorCode={}, correlationId={}",
