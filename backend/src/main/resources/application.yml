@@ -83,7 +83,11 @@ spring:
     default-property-inclusion: non_null
 
 server:
+  # Bind to the port provided by the hosting environment (Render sets $PORT).
+  # Use the PORT env var when present, otherwise fall back to 8080.
   port: ${PORT:8080}
+  # Ensure the server binds to all network interfaces inside the container.
+  address: 0.0.0.0
   error:
     include-message: always
     include-binding-errors: always
