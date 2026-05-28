@@ -15,14 +15,14 @@ import org.springframework.kafka.support.serializer.JsonSerializer;
 import java.util.HashMap;
 import java.util.Map;
 
-@Configuration
+// @Configuration
 @ConditionalOnProperty(prefix = "feature.kafka", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class KafkaProducerConfig {
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    @Bean
+    // @Bean
     public ProducerFactory<String, PaymentEvent> producerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
@@ -39,7 +39,7 @@ public class KafkaProducerConfig {
         return new DefaultKafkaProducerFactory<>(props);
     }
 
-    @Bean
+    // @Bean
     public KafkaTemplate<String, PaymentEvent> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }

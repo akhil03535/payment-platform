@@ -10,7 +10,6 @@ import com.paymentplatform.exception.PaymentNotFoundException;
 import com.paymentplatform.exception.PaymentProcessingException;
 import com.paymentplatform.exception.RetryablePaymentException;
 import com.paymentplatform.kafka.PaymentEvent;
-import com.paymentplatform.kafka.producer.PaymentEventProducer;
 import com.paymentplatform.repository.*;
 import com.paymentplatform.util.CorrelationIdUtils;
 import com.paymentplatform.util.PaymentReferenceGenerator;
@@ -52,8 +51,7 @@ public class PaymentService {
     private final RetryLogRepository retryLogRepository;
     private final AuditLogRepository auditLogRepository;
     private final UserRepository userRepository;
-    private final PaymentEventProducer eventProducer;
-    
+
     private final Optional<RedisTemplate<String, Object>> redisTemplate;
     private final MeterRegistry meterRegistry;
 
@@ -114,7 +112,7 @@ public class PaymentService {
 
         // Publish event
         PaymentEvent event = buildEvent(payment, PaymentEvent.EventTypes.PAYMENT_CREATED, correlationId);
-        eventProducer.publishPaymentCreated(event);
+        // eventProducer.publishPaymentCreated(event);
 
         // Audit log
         saveAuditLog("PAYMENT", payment.getId(), "CREATED", null,
@@ -156,7 +154,7 @@ public class PaymentService {
             paymentRepository.save(payment);
 
             PaymentEvent processingEvent = buildEvent(payment, PaymentEvent.EventTypes.PAYMENT_PROCESSING, correlationId);
-            eventProducer.publishPaymentCreated(processingEvent);
+            // eventProducer.publishPaymentCreated(processingEvent);
 
             // Simulate payment gateway call
             String gatewayRef = simulateGatewayCall(payment);
@@ -199,7 +197,7 @@ public class PaymentService {
                 payment.getUser().getId(), correlationId);
 
             PaymentEvent successEvent = buildEvent(payment, PaymentEvent.EventTypes.PAYMENT_SUCCESS, correlationId);
-            eventProducer.publishPaymentProcessed(successEvent);
+            // eventProducer.publishPaymentProcessed(successEvent);
 
         } catch (RetryablePaymentException e) {
             handlePaymentFailure(paymentId, e.getMessage(), "RETRYABLE_ERROR", correlationId, true);
@@ -259,7 +257,7 @@ public class PaymentService {
 
         PaymentEvent retryEvent = buildEvent(payment, PaymentEvent.EventTypes.PAYMENT_RETRY, correlationId);
         retryEvent.setRetryCount(payment.getRetryCount());
-        eventProducer.publishPaymentRetry(retryEvent);
+        // eventProducer.publishPaymentRetry(retryEvent);
 
         processPaymentAsync(payment.getId(), correlationId);
 
@@ -309,7 +307,7 @@ public class PaymentService {
             user.getId(), correlationId);
 
         PaymentEvent reversalEvent = buildEvent(payment, PaymentEvent.EventTypes.PAYMENT_REVERSED, correlationId);
-        eventProducer.publishPaymentReversed(reversalEvent);
+        // eventProducer.publishPaymentReversed(reversalEvent);
 
         return mapToResponse(payment);
     }
@@ -497,7 +495,7 @@ public class PaymentService {
 
             PaymentEvent failEvent = buildEvent(payment, PaymentEvent.EventTypes.PAYMENT_FAILED, correlationId);
             failEvent.setFailureReason(reason);
-            eventProducer.publishPaymentFailed(failEvent);
+            // eventProducer.publishPaymentFailed(failEvent);
 
             log.error("Payment failed: ref={}, reason={}, errorCode={}, correlationId={}",
                 payment.getPaymentReference(), reason, errorCode, correlationId);

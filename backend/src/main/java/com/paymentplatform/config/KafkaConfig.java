@@ -10,7 +10,7 @@ import org.springframework.kafka.core.KafkaAdmin;
 
 import java.util.Map;
 
-@Configuration
+// @Configuration
 @ConditionalOnProperty(prefix = "feature.kafka", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class KafkaConfig {
 
@@ -38,14 +38,14 @@ public class KafkaConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    @Bean
+    // @Bean
     public KafkaAdmin kafkaAdmin() {
         return new KafkaAdmin(Map.of(
             "bootstrap.servers", bootstrapServers
         ));
     }
 
-    @Bean
+    // @Bean
     public NewTopic paymentCreatedTopic() {
         return TopicBuilder.name(paymentCreatedTopic)
             .partitions(3)
@@ -54,7 +54,7 @@ public class KafkaConfig {
             .build();
     }
 
-    @Bean
+    // @Bean
     public NewTopic paymentProcessedTopic() {
         return TopicBuilder.name(paymentProcessedTopic)
             .partitions(3)
@@ -62,7 +62,7 @@ public class KafkaConfig {
             .build();
     }
 
-    @Bean
+    // @Bean
     public NewTopic paymentFailedTopic() {
         return TopicBuilder.name(paymentFailedTopic)
             .partitions(3)
@@ -70,7 +70,7 @@ public class KafkaConfig {
             .build();
     }
 
-    @Bean
+    // @Bean
     public NewTopic paymentRetryTopic() {
         return TopicBuilder.name(paymentRetryTopic)
             .partitions(3)
@@ -78,7 +78,7 @@ public class KafkaConfig {
             .build();
     }
 
-    @Bean
+    // @Bean
     public NewTopic paymentReversedTopic() {
         return TopicBuilder.name(paymentReversedTopic)
             .partitions(3)
@@ -86,7 +86,7 @@ public class KafkaConfig {
             .build();
     }
 
-    @Bean
+    // @Bean
     public NewTopic notificationTopic() {
         return TopicBuilder.name(notificationTopic)
             .partitions(3)
@@ -94,7 +94,7 @@ public class KafkaConfig {
             .build();
     }
 
-    @Bean
+    // @Bean
     public NewTopic dlqTopic() {
         return TopicBuilder.name(dlqTopic)
             .partitions(1)

@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
-@Configuration
+// @Configuration
 @ConditionalOnProperty(prefix = "feature.kafka", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class KafkaConsumerConfig {
 
@@ -31,7 +31,7 @@ public class KafkaConsumerConfig {
     @Value("${spring.kafka.consumer.group-id}")
     private String groupId;
 
-    @Bean
+    // @Bean
     public ConsumerFactory<String, PaymentEvent> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
@@ -54,7 +54,7 @@ public class KafkaConsumerConfig {
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
-    @Bean
+    // @Bean
     public ConcurrentKafkaListenerContainerFactory<String, PaymentEvent> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, PaymentEvent> factory =
             new ConcurrentKafkaListenerContainerFactory<>();

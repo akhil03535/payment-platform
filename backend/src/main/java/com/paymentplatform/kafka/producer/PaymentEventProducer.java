@@ -12,11 +12,11 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
-@Component
+// @Component
 @RequiredArgsConstructor
 public class PaymentEventProducer {
 
-    private final KafkaTemplate<String, PaymentEvent> kafkaTemplate;
+    // private final KafkaTemplate<String, PaymentEvent> kafkaTemplate;
     private final MeterRegistry meterRegistry;
 
     @Value("${kafka.topics.payment-created}")
