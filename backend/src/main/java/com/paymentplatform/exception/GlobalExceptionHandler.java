@@ -5,6 +5,7 @@ import com.paymentplatform.util.CorrelationIdUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -80,6 +81,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
         return buildErrorResponse("Access denied", "ACCESS_DENIED", HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrity(DataIntegrityViolationException ex) {
+        log.warn("Data integrity violation [correlationId={}]: {}", CorrelationIdUtils.get(), ex.getMostSpecificCause().getMessage());
+        return buildErrorResponse("Invalid or duplicate data", "DATA_INTEGRITY_VIOLATION", HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(RuntimeException.class)

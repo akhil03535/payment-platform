@@ -70,6 +70,7 @@ public class PaymentService {
     @Transactional
     @CacheEvict(value = "analytics", allEntries = true)
     public PaymentResponse createPayment(CreatePaymentRequest request, User user, String idempotencyKey) {
+        user = requireAuthenticatedUser(user);
         // Idempotency check
         if (idempotencyKey != null) {
             String cachedResult = checkIdempotency(idempotencyKey, user.getId());
@@ -325,6 +326,7 @@ public class PaymentService {
     @Transactional(readOnly = true)
     @Cacheable(value = "payments", key = "#paymentId")
     public PaymentResponse getPayment(UUID paymentId, User user) {
+        user = requireAuthenticatedUser(user);
         Payment payment = paymentRepository.findById(paymentId)
             .orElseThrow(() -> new PaymentNotFoundException("Payment not found: " + paymentId));
 
@@ -338,26 +340,27 @@ public class PaymentService {
 
     @Transactional(readOnly = true)
     public Page<PaymentResponse> getPayments(User user, int page, int size, String status) {
+        User authenticatedUser = requireAuthenticatedUser(user);
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
 
         Page<Payment> payments;
         if (status != null && !status.isBlank()) {
             Payment.PaymentStatus paymentStatus = Payment.PaymentStatus.valueOf(status.toUpperCase());
-            if (user.getRole() == User.UserRole.ADMIN) {
+            if (authenticatedUser.getRole() == User.UserRole.ADMIN) {
                 payments = paymentRepository.findByStatusOrderByCreatedAtDesc(paymentStatus, pageable);
             } else {
                 payments = paymentRepository.findAll(
                     (root, query, cb) -> cb.and(
-                        cb.equal(root.get("user").get("id"), user.getId()),
+                        cb.equal(root.get("user").get("id"), authenticatedUser.getId()),
                         cb.equal(root.get("status"), paymentStatus)
                     ), pageable
                 );
             }
         } else {
-            if (user.getRole() == User.UserRole.ADMIN) {
+            if (authenticatedUser.getRole() == User.UserRole.ADMIN) {
                 payments = paymentRepository.findAll(pageable);
             } else {
-                payments = paymentRepository.findByUserIdOrderByCreatedAtDesc(user.getId(), pageable);
+                payments = paymentRepository.findByUserIdOrderByCreatedAtDesc(authenticatedUser.getId(), pageable);
             }
         }
 
@@ -367,6 +370,7 @@ public class PaymentService {
     @Transactional(readOnly = true)
     @Cacheable(value = "analytics", key = "#user.id + ':' + #days")
     public AnalyticsResponse getAnalytics(User user, int days) {
+        user = requireAuthenticatedUser(user);
         ZonedDateTime since = ZonedDateTime.now().minusDays(days);
         boolean isAdmin = user.getRole() == User.UserRole.ADMIN;
 
@@ -609,6 +613,13 @@ public class PaymentService {
 
         response.setTransactions(transactions);
         return response;
+    }
+
+    private User requireAuthenticatedUser(User user) {
+        if (user == null) {
+            throw new InvalidPaymentException("Authentication required");
+        }
+        return user;
     }
 
     @Scheduled(fixedDelay = 60000)
