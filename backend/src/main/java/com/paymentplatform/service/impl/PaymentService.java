@@ -106,31 +106,40 @@ public class PaymentService {
             payment.getPaymentReference(), payment.getAmount(), payment.getCurrency(),
             user.getId(), correlationId);
 
-        // Cache idempotency
-        if (idempotencyKey != null) {
-            storeIdempotency(idempotencyKey, user.getId(), payment.getId().toString());
+        try {
+            // Cache idempotency
+            if (idempotencyKey != null) {
+                storeIdempotency(idempotencyKey, user.getId(), payment.getId().toString());
+            }
+
+            // Publish event
+            PaymentEvent event = buildEvent(payment, PaymentEvent.EventTypes.PAYMENT_CREATED, correlationId);
+            log.info("Kafka disabled - skipping payment event publishing");
+            log.info("Payment event skipped because Kafka disabled: eventType={}, paymentId={}, correlationId={}",
+                event.getEventType(), event.getPaymentId(), correlationId);
+            // eventProducer.publishPaymentCreated(event);
+
+            // Audit log
+            saveAuditLog("PAYMENT", payment.getId(), "CREATED", null,
+                Map.of("status", "INITIATED", "amount", payment.getAmount()), user.getId(), correlationId);
+
+            String paymentMethodTag = request.getPaymentMethod() != null
+                ? request.getPaymentMethod().name()
+                : "UNKNOWN";
+            meterRegistry.counter("payments.created",
+                "currency", request.getCurrency(),
+                "method", paymentMethodTag
+            ).increment();
+
+            // Async process
+            processPaymentAsync(payment.getId(), correlationId);
+        } catch (Exception ex) {
+            log.warn("Non-fatal post-save payment work failed for paymentId={}, correlationId={}: {}",
+                payment.getId(), correlationId, ex.getMessage(), ex);
+        } finally {
+            timerSample.stop(Timer.builder("payment.creation.time")
+                .register(meterRegistry));
         }
-
-        // Publish event
-        PaymentEvent event = buildEvent(payment, PaymentEvent.EventTypes.PAYMENT_CREATED, correlationId);
-        log.info("Payment event skipped because Kafka disabled: eventType={}, paymentId={}, correlationId={}",
-            event.getEventType(), event.getPaymentId(), correlationId);
-        // eventProducer.publishPaymentCreated(event);
-
-        // Audit log
-        saveAuditLog("PAYMENT", payment.getId(), "CREATED", null,
-            Map.of("status", "INITIATED", "amount", payment.getAmount()), user.getId(), correlationId);
-
-        meterRegistry.counter("payments.created",
-            "currency", request.getCurrency(),
-            "method", request.getPaymentMethod().name()
-        ).increment();
-
-        // Async process
-        processPaymentAsync(payment.getId(), correlationId);
-
-        timerSample.stop(Timer.builder("payment.creation.time")
-            .register(meterRegistry));
 
         return mapToResponse(payment);
     }
@@ -368,7 +377,7 @@ public class PaymentService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "analytics", key = "#user.id + ':' + #days")
+    @Cacheable(value = "analytics", key = "#days + ':' + (#user != null ? #user.id.toString() : 'anonymous')")
     public AnalyticsResponse getAnalytics(User user, int days) {
         user = requireAuthenticatedUser(user);
         ZonedDateTime since = ZonedDateTime.now().minusDays(days);

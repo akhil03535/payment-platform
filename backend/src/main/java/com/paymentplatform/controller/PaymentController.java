@@ -32,6 +32,11 @@ public class PaymentController {
             @AuthenticationPrincipal User user,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
 
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Authentication required", "UNAUTHORIZED"));
+        }
+
         PaymentResponse response = paymentService.createPayment(request, user, idempotencyKey);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success(response, "Payment initiated successfully"));
@@ -41,6 +46,11 @@ public class PaymentController {
     public ResponseEntity<ApiResponse<PaymentResponse>> getPayment(
             @PathVariable UUID paymentId,
             @AuthenticationPrincipal User user) {
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Authentication required", "UNAUTHORIZED"));
+        }
 
         PaymentResponse response = paymentService.getPayment(paymentId, user);
         return ResponseEntity.ok(ApiResponse.success(response));
@@ -53,6 +63,11 @@ public class PaymentController {
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String status) {
 
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Authentication required", "UNAUTHORIZED"));
+        }
+
         Page<PaymentResponse> payments = paymentService.getPayments(user, page, size, status);
         return ResponseEntity.ok(ApiResponse.success(payments));
     }
@@ -61,6 +76,11 @@ public class PaymentController {
     public ResponseEntity<ApiResponse<PaymentResponse>> retryPayment(
             @PathVariable UUID paymentId,
             @AuthenticationPrincipal User user) {
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Authentication required", "UNAUTHORIZED"));
+        }
 
         String correlationId = CorrelationIdUtils.get();
         PaymentResponse response = paymentService.retryPayment(paymentId, user, correlationId);
@@ -72,6 +92,11 @@ public class PaymentController {
             @PathVariable UUID paymentId,
             @AuthenticationPrincipal User user) {
 
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Authentication required", "UNAUTHORIZED"));
+        }
+
         String correlationId = CorrelationIdUtils.get();
         PaymentResponse response = paymentService.reversePayment(paymentId, user, correlationId);
         return ResponseEntity.ok(ApiResponse.success(response, "Payment reversed successfully"));
@@ -81,6 +106,11 @@ public class PaymentController {
     public ResponseEntity<ApiResponse<AnalyticsResponse>> getAnalytics(
             @AuthenticationPrincipal User user,
             @RequestParam(defaultValue = "30") int days) {
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error("Authentication required", "UNAUTHORIZED"));
+        }
 
         AnalyticsResponse analytics = paymentService.getAnalytics(user, days);
         return ResponseEntity.ok(ApiResponse.success(analytics));
