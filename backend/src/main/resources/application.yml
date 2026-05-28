@@ -126,7 +126,7 @@ app:
     access-token-expiry: 900000      # 15 minutes
     refresh-token-expiry: 604800000  # 7 days
   cors:
-    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173}
+    allowed-origins: ${CORS_ORIGINS:https://*.onrender.com,http://localhost:3000,http://localhost:5173}
   payment:
     max-retry-attempts: 3
     retry-delay-ms: 2000

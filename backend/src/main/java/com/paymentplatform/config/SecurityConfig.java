@@ -25,6 +25,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
@@ -63,8 +64,17 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        List<String> allowedOrigins = Arrays.asList(allowedOriginsStr.split(","));
-        config.setAllowedOrigins(allowedOrigins);
+        List<String> allowedOrigins = Arrays.stream(allowedOriginsStr.split(","))
+            .map(String::trim)
+            .filter(s -> !s.isEmpty())
+            .collect(Collectors.toList());
+
+        boolean hasPattern = allowedOrigins.stream().anyMatch(origin -> origin.contains("*"));
+        if (hasPattern) {
+            config.setAllowedOriginPatterns(allowedOrigins);
+        } else {
+            config.setAllowedOrigins(allowedOrigins);
+        }
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList(
             "Authorization", "Content-Type", "X-Correlation-ID",

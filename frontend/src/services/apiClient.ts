@@ -1,11 +1,16 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 
+const DEFAULT_API_ORIGIN = 'https://payment-platform-backend.onrender.com'
 const rawApiUrl = (import.meta.env.VITE_API_URL as string | undefined)?.trim()
-const normalizedApiOrigin = rawApiUrl
-  ? rawApiUrl.replace(/\/+$/, '').replace(/\/api$/, '')
-  : ''
+const normalizedApiOrigin = (rawApiUrl || DEFAULT_API_ORIGIN)
+  .replace(/\/+$/, '')
+  .replace(/\/api$/, '')
 
-const BASE_URL = normalizedApiOrigin ? `${normalizedApiOrigin}/api` : '/api'
+const apiOrigin = /^https?:\/\//i.test(normalizedApiOrigin)
+  ? normalizedApiOrigin
+  : DEFAULT_API_ORIGIN
+
+const BASE_URL = `${apiOrigin}/api`
 
 export const apiClient = axios.create({
   baseURL: BASE_URL,
