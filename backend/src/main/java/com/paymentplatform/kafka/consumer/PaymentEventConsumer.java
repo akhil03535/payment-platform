@@ -5,7 +5,6 @@ import com.paymentplatform.kafka.producer.PaymentEventProducer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
@@ -17,11 +16,11 @@ public class PaymentEventConsumer {
 
     private final PaymentEventProducer eventProducer;
 
-    @KafkaListener(
+    /* @KafkaListener(
         topics = "${kafka.topics.payment-failed}",
         groupId = "${spring.kafka.consumer.group-id}",
         containerFactory = "kafkaListenerContainerFactory"
-    )
+    ) */
     public void handlePaymentFailed(ConsumerRecord<String, PaymentEvent> record, Acknowledgment ack) {
         PaymentEvent event = record.value();
         try {
@@ -53,10 +52,10 @@ public class PaymentEventConsumer {
         }
     }
 
-    @KafkaListener(
+    /* @KafkaListener(
         topics = "${kafka.topics.payment-processed}",
         groupId = "${spring.kafka.consumer.group-id}"
-    )
+    ) */
     public void handlePaymentProcessed(ConsumerRecord<String, PaymentEvent> record, Acknowledgment ack) {
         PaymentEvent event = record.value();
         try {
@@ -84,10 +83,10 @@ public class PaymentEventConsumer {
         }
     }
 
-    @KafkaListener(
+    /* @KafkaListener(
         topics = "${kafka.topics.notification}",
         groupId = "${spring.kafka.consumer.group-id}-notifications"
-    )
+    ) */
     @Async("kafkaTaskExecutor")
     public void handleNotification(ConsumerRecord<String, PaymentEvent> record, Acknowledgment ack) {
         PaymentEvent event = record.value();
@@ -103,10 +102,10 @@ public class PaymentEventConsumer {
         }
     }
 
-    @KafkaListener(
+    /* @KafkaListener(
         topics = "${kafka.topics.dlq}",
         groupId = "${spring.kafka.consumer.group-id}-dlq"
-    )
+    ) */
     public void handleDlqMessage(ConsumerRecord<String, PaymentEvent> record, Acknowledgment ack) {
         PaymentEvent event = record.value();
         log.error("DLQ message received: eventType={}, paymentId={}, reason={}, correlationId={}",
