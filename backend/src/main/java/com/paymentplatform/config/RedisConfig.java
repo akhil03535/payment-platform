@@ -1,8 +1,7 @@
 package com.paymentplatform.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.time.Duration;
+
 import org.redisson.config.Config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -16,7 +15,9 @@ import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSeriali
 import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-import java.time.Duration;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 @Configuration
 @ConditionalOnProperty(prefix = "feature.cache", name = "enabled", havingValue = "true", matchIfMissing = true)
@@ -83,7 +84,7 @@ public class RedisConfig {
     public org.redisson.config.Config redissonConfig() {
         Config config = new Config();
         config.useSingleServer()
-            .setAddress("redis://" + redisHost + ":" + redisPort)
+            .setAddress("rediss://" + redisHost + ":" + redisPort)
             .setConnectionMinimumIdleSize(2)
             .setConnectionPoolSize(10)
             .setConnectTimeout(3000)
