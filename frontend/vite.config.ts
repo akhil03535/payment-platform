@@ -1,6 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+const apiTarget = (
+  process.env.VITE_API_SERVER ||
+  process.env.VITE_API_URL ||
+  'https://payment-platform-backend.onrender.com'
+).replace(/\/api\/?$/, '')
+
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -8,7 +14,7 @@ export default defineConfig({
     host: '127.0.0.1',
     proxy: {
       '/api': {
-        target: process.env.VITE_API_SERVER || 'http://localhost:8080',
+        target: apiTarget,
         changeOrigin: true,
       }
     }
