@@ -41,9 +41,11 @@ spring:
 
   data:
     redis:
-      host: ${REDIS_HOST}
-      port: ${REDIS_PORT}
-      password: ${REDIS_PASSWORD}
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      ssl:
+        enabled: ${REDIS_SSL_ENABLED:false}
       timeout: 2000ms
       lettuce:
         pool:
@@ -93,6 +95,9 @@ server:
     include-binding-errors: always
 
 management:
+  health:
+    redis:
+      enabled: ${MANAGEMENT_HEALTH_REDIS_ENABLED:false}
   endpoints:
     web:
       exposure:
@@ -128,6 +133,10 @@ app:
     idempotency-ttl-seconds: 86400    # 24 hours
     rate-limit-requests: 100
     rate-limit-window-seconds: 60
+
+feature:
+  cache:
+    enabled: ${FEATURE_CACHE_ENABLED:false}
 
 # Resilience4j Configuration
 resilience4j:
