@@ -21,8 +21,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -54,7 +53,7 @@ public class PaymentService {
     private final AuditLogRepository auditLogRepository;
     private final UserRepository userRepository;
     private final PaymentEventProducer eventProducer;
-    private final Optional<RedissonClient> redissonClient;
+    
     private final Optional<RedisTemplate<String, Object>> redisTemplate;
     private final MeterRegistry meterRegistry;
 
@@ -67,7 +66,7 @@ public class PaymentService {
     @Value("${feature.cache.enabled:true}")
     private boolean cacheEnabled;
 
-    private static final String LOCK_PREFIX = "payment:lock:";
+   
     private static final String IDEMPOTENCY_PREFIX = "idempotency:";
 
     @Transactional
@@ -139,23 +138,8 @@ public class PaymentService {
     @CircuitBreaker(name = "paymentProcessor", fallbackMethod = "processPaymentFallback")
     @Retry(name = "paymentProcessor")
     public void processPayment(UUID paymentId, String correlationId) {
-        String lockKey = LOCK_PREFIX + paymentId;
-        RLock lock = null;
+   
 
-        if (cacheEnabled && redissonClient.isPresent()) {
-            lock = redissonClient.get().getLock(lockKey);
-            try {
-                boolean locked = lock.tryLock(5, 30, TimeUnit.SECONDS);
-                if (!locked) {
-                    log.warn("Could not acquire lock for payment: {}", paymentId);
-                    return;
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.warn("Interrupted while acquiring lock for payment {}", paymentId);
-                return;
-            }
-        }
 
         try {
             Payment payment = paymentRepository.findById(paymentId)
@@ -226,9 +210,7 @@ public class PaymentService {
             handlePaymentFailure(paymentId, e.getMessage(), "GATEWAY_ERROR", correlationId, true);
             throw new RetryablePaymentException("Payment gateway error: " + e.getMessage());
         } finally {
-            if (lock != null && lock.isHeldByCurrentThread()) {
-                lock.unlock();
-            }
+              
         }
     }
 
