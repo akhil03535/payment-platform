@@ -39,3 +39,38 @@ Thumbs.db
 # Coverage
 *.exec
 jacoco/
+
+
+# Docker volumes / temp
+postgres-data/
+redis-data/
+kafka-data/
+zookeeper-data/
+
+# Build caches
+.cache/
+.gradle/
+
+# VS Code
+.vscode/
+
+# Mac/Linux temp
+*.pid
+
+# Kafka logs
+kafka-logs/
+logs/
+
+# Spring Boot
+spring.log
+
+# Secrets
+application-local.yml
+application-secret.yml
+
+# Render/Vercel temp
+.vercel/
+.render/
+
+# Docker override files
+docker-compose.override.yml
