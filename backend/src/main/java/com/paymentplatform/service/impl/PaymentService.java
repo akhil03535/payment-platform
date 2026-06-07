@@ -131,8 +131,7 @@ public class PaymentService {
                 "method", paymentMethodTag
             ).increment();
 
-            // Async process
-            processPaymentAsync(payment.getId(), correlationId);
+            processPayment(payment.getId(), correlationId);
         } catch (Exception ex) {
             log.warn("Non-fatal post-save payment work failed for paymentId={}, correlationId={}: {}",
                 payment.getId(), correlationId, ex.getMessage(), ex);
