@@ -564,7 +564,7 @@ private void handlePaymentFailure(UUID paymentId,
             //     Thread.currentThread().interrupt();
             // }
 
-            processPaymentAsync(payment.getId(), correlationId);
+           // processPaymentAsync(payment.getId(), correlationId);
 
             return;
         }
@@ -722,12 +722,34 @@ private void handlePaymentFailure(UUID paymentId,
         return user;
     }
 
-    @Scheduled(fixedDelay = 60000)
-    public void processScheduledRetries() {
-        log.debug("Checking for retryable payments...");
-        List<Payment> retryablePayments = paymentRepository.findRetryablePayments();
-        retryablePayments.forEach(p ->
-            log.info("Found retryable payment: {}", p.getPaymentReference())
-        );
+@Scheduled(fixedDelay = 60000)
+public void processScheduledRetries() {
+
+    List<Payment> retryablePayments =
+            paymentRepository.findRetryablePayments();
+
+    for (Payment payment : retryablePayments) {
+
+        try {
+
+            log.info(
+                "Processing retry for {}",
+                payment.getPaymentReference()
+            );
+
+            processPayment(
+                payment.getId(),
+                UUID.randomUUID().toString()
+            );
+
+        } catch (Exception e) {
+
+            log.error(
+                "Retry failed for {}",
+                payment.getPaymentReference(),
+                e
+            );
+        }
     }
+}
 }
