@@ -558,11 +558,11 @@ private void handlePaymentFailure(UUID paymentId,
                     correlationId
             );
 
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            // try {
+            //     Thread.sleep(2000);
+            // } catch (InterruptedException e) {
+            //     Thread.currentThread().interrupt();
+            // }
 
             processPaymentAsync(payment.getId(), correlationId);
 
