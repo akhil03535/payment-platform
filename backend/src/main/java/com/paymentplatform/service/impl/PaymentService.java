@@ -37,7 +37,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.ZonedDateTime;
 import java.util.*;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -478,53 +477,146 @@ public class PaymentService {
             }
         });
     }
+private String simulateGatewayCall(Payment payment) throws InterruptedException {
 
-    private String simulateGatewayCall(Payment payment) throws InterruptedException {
-        // Simulate network delay
-        Thread.sleep(100 + (long)(Math.random() * 200));
+    Thread.sleep(100 + (long) (Math.random() * 200));
 
-        // Simulate 15% failure rate for demo
-        double random = Math.random();
-        if (random < 0.10) {
-            throw new RetryablePaymentException("Gateway timeout - connection refused");
-        }
-        if (random < 0.15) {
-            throw new PaymentProcessingException("Gateway error: insufficient funds", "INSUFFICIENT_FUNDS");
-        }
+    double random = Math.random();
 
-        return "GW-" + UUID.randomUUID().toString().toUpperCase().substring(0, 12);
+    // 20% retryable failures
+    if (random < 0.20) {
+        throw new RetryablePaymentException(
+                "Gateway timeout - connection refused"
+        );
     }
+
+    // 15% permanent failures
+    if (random < 0.35) {
+        throw new PaymentProcessingException(
+                "Gateway error: insufficient funds",
+                "INSUFFICIENT_FUNDS"
+        );
+    }
+
+    // 65% success
+    return "GW-" +
+            UUID.randomUUID()
+                    .toString()
+                    .toUpperCase()
+                    .substring(0, 12);
+}
 
     @Transactional
-    private void handlePaymentFailure(UUID paymentId, String reason, String errorCode,
-                                       String correlationId, boolean canRetry) {
-        paymentRepository.findById(paymentId).ifPresent(payment -> {
-            boolean shouldRetry = canRetry && payment.getRetryCount() < payment.getMaxRetries();
+private void handlePaymentFailure(UUID paymentId,
+                                  String reason,
+                                  String errorCode,
+                                  String correlationId,
+                                  boolean canRetry) {
 
-            payment.setStatus(shouldRetry ? Payment.PaymentStatus.FAILED : Payment.PaymentStatus.FAILED);
+    paymentRepository.findById(paymentId).ifPresent(payment -> {
+
+        boolean shouldRetry =
+                canRetry && payment.getRetryCount() < payment.getMaxRetries();
+
+        if (shouldRetry) {
+
+            payment.setStatus(Payment.PaymentStatus.RETRYING);
+            payment.setRetryCount(payment.getRetryCount() + 1);
             payment.setFailureReason(reason);
+
             paymentRepository.save(payment);
 
-            meterRegistry.counter("payments.failed",
+            RetryLog retryLog = RetryLog.builder()
+                    .payment(payment)
+                    .attemptNumber(payment.getRetryCount())
+                    .status(RetryLog.RetryStatus.ATTEMPTED)
+                    .retryAt(ZonedDateTime.now())
+                    .errorMessage(reason)
+                    .build();
+
+            retryLogRepository.save(retryLog);
+
+            log.warn(
+                    "Retrying payment: ref={}, attempt={}/{}, reason={}",
+                    payment.getPaymentReference(),
+                    payment.getRetryCount(),
+                    payment.getMaxRetries(),
+                    reason
+            );
+
+            saveAuditLog(
+                    "PAYMENT",
+                    paymentId,
+                    "RETRYING",
+                    Map.of("status", "PROCESSING"),
+                    Map.of(
+                            "status", "RETRYING",
+                            "attempt", payment.getRetryCount(),
+                            "reason", reason
+                    ),
+                    payment.getUser().getId(),
+                    correlationId
+            );
+
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            processPaymentAsync(payment.getId(), correlationId);
+
+            return;
+        }
+
+        payment.setStatus(Payment.PaymentStatus.FAILED);
+        payment.setFailureReason(reason);
+
+        paymentRepository.save(payment);
+
+        meterRegistry.counter(
+                "payments.failed",
                 "reason", errorCode,
                 "currency", payment.getCurrency()
-            ).increment();
+        ).increment();
 
-            saveAuditLog("PAYMENT", paymentId, "FAILED",
+        saveAuditLog(
+                "PAYMENT",
+                paymentId,
+                "FAILED",
                 Map.of("status", "PROCESSING"),
-                Map.of("status", "FAILED", "reason", reason),
-                payment.getUser().getId(), correlationId);
+                Map.of(
+                        "status", "FAILED",
+                        "reason", reason
+                ),
+                payment.getUser().getId(),
+                correlationId
+        );
 
-            PaymentEvent failEvent = buildEvent(payment, PaymentEvent.EventTypes.PAYMENT_FAILED, correlationId);
-            failEvent.setFailureReason(reason);
-            log.info("Payment event skipped because Kafka disabled: eventType={}, paymentId={}, correlationId={}",
-                failEvent.getEventType(), failEvent.getPaymentId(), correlationId);
-            // eventProducer.publishPaymentFailed(failEvent);
+        PaymentEvent failEvent = buildEvent(
+                payment,
+                PaymentEvent.EventTypes.PAYMENT_FAILED,
+                correlationId
+        );
 
-            log.error("Payment failed: ref={}, reason={}, errorCode={}, correlationId={}",
-                payment.getPaymentReference(), reason, errorCode, correlationId);
-        });
-    }
+        failEvent.setFailureReason(reason);
+
+        log.info(
+                "Payment event skipped because Kafka disabled: eventType={}, paymentId={}, correlationId={}",
+                failEvent.getEventType(),
+                failEvent.getPaymentId(),
+                correlationId
+        );
+
+        log.error(
+                "Payment failed: ref={}, reason={}, errorCode={}, correlationId={}",
+                payment.getPaymentReference(),
+                reason,
+                errorCode,
+                correlationId
+        );
+    });
+}
 
     private String checkIdempotency(String key, UUID userId) {
         if (!cacheEnabled || redisTemplate.isEmpty()) {
